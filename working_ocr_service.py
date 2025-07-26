@@ -623,7 +623,77 @@ class WorkingOCRService:
         except (KeyboardInterrupt, SystemExit):
             self.quit_service()
 
+    def add_to_startup(self):
+        """Windows起動時の自動開始に追加"""
+        try:
+            import winreg
+            
+            script_path = os.path.abspath(__file__)
+            python_path = sys.executable
+            
+            # pythonw を使用してターミナル非表示で実行
+            if python_path.endswith('python.exe'):
+                pythonw_path = python_path.replace('python.exe', 'pythonw.exe')
+                if os.path.exists(pythonw_path):
+                    python_path = pythonw_path
+            
+            command = f'"{python_path}" "{script_path}"'
+            
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                               r"Software\Microsoft\Windows\CurrentVersion\Run", 
+                               0, winreg.KEY_ALL_ACCESS)
+            
+            winreg.SetValueEx(key, "WorkingOCRService", 0, winreg.REG_SZ, command)
+            winreg.CloseKey(key)
+            
+            self.log("✅ Windows起動時の自動開始に登録しました")
+            
+        except Exception as e:
+            self.log(f"自動開始の登録に失敗: {e}")
+
+    def remove_from_startup(self):
+        """Windows起動時の自動開始から削除"""
+        try:
+            import winreg
+            
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                               r"Software\Microsoft\Windows\CurrentVersion\Run", 
+                               0, winreg.KEY_ALL_ACCESS)
+            
+            winreg.DeleteValue(key, "WorkingOCRService")
+            winreg.CloseKey(key)
+            
+            self.log("✅ 自動開始から削除しました")
+            
+        except Exception as e:
+            self.log(f"自動開始の削除に失敗: {e}")
+
 def main():
+    # コマンドライン引数処理
+    if len(sys.argv) > 1:
+        service = WorkingOCRService()
+        arg = sys.argv[1].lower()
+        
+        if arg == "install":
+            service.add_to_startup()
+            return
+        elif arg == "uninstall":
+            service.remove_from_startup()
+            return
+        elif arg == "help":
+            print("確実動作OCRサービス - 使用方法:")
+            print("  python working_ocr_service.py         # サービス開始")
+            print("  pythonw working_ocr_service.py        # ターミナル非表示で開始")
+            print("  python working_ocr_service.py install # 自動開始に登録")
+            print("  python working_ocr_service.py uninstall # 自動開始から削除")
+            print("")
+            print("機能:")
+            print("  - 高精度日本語OCR")
+            print("  - 英数字誤認識修正")
+            print("  - 日本語文字間スペース自動除去")
+            print("  - プログラミング関連テキスト最適化")
+            return
+    
     try:
         service = WorkingOCRService()
         service.run()
