@@ -9,6 +9,7 @@ Ctrl+Alt+Sによるワンクリック文字起こし
 高精度OCR（日本語・英語対応）
 自動ログ保存・履歴管理
 クリップボード連携
+- **🆕 バックグラウンド実行モード（CMD画面非表示）**
 
 【開発背景・課題設定】
 解決すべき課題
@@ -33,6 +34,45 @@ UI：キーボードフック（keyboard）
 マルチスケール画像前処理による認識精度向上
 日本語特化の後処理アルゴリズム実装
 非同期処理によるレスポンス速度改善
+
+## 🆕 【バックグラウンド実行機能】
+
+### 新機能概要
+OCRサービスをCMD画面を表示せずにバックグラウンドで実行する機能を実装。ユーザーの作業画面を妨げることなく常駐サービスとして動作。
+
+### 実装方法
+
+#### 1. VBScript版 (`run_ocr_hidden.vbs`)
+```vbs
+' CMD画面を非表示でOCRサービスを起動
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "cmd /c python background_ocr_service.py", 0, False
+```
+
+#### 2. PowerShell版 (`run_ocr_hidden.ps1`)
+```powershell
+# 非表示プロセスでOCRサービスを起動
+$psi = New-Object System.Diagnostics.ProcessStartInfo
+$psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+$psi.CreateNoWindow = $true
+```
+
+#### 3. Python Wrapper版 (`run_ocr_background.pyw`)
+```python
+# .pyw拡張子によりコンソール非表示で実行
+subprocess.Popen([sys.executable, "ocr_service.py"], 
+                creationflags=subprocess.CREATE_NO_WINDOW)
+```
+
+### 自動起動設定
+- **スタートアップフォルダ**: 非表示版ショートカットを自動生成
+- **起動方式**: `wscript.exe run_ocr_hidden.vbs`
+- **ウィンドウ状態**: 完全非表示（バックグラウンド常駐）
+
+### 技術的メリット
+1. **ユーザビリティ向上**: 作業画面にCMD画面が表示されない
+2. **システムリソース効率化**: 不要なUI描画処理を排除
+3. **安定性向上**: ユーザーの誤操作によるサービス停止を防止
 
 【今後の開発ロードマップ】
 Phase 1: インテリジェント分類機能
@@ -59,6 +99,7 @@ Phase 3: マルチプラットフォーム展開
 UX: ワンクリック操作による圧倒的な操作性
 拡張性: AIエージェント連携による付加価値創出
 実用性: 実業務での継続使用を前提とした設計
+- **🆕 バックグラウンド**: 非表示常駐による作業効率化
 
 【開発成果・学習要素】
 
@@ -66,3 +107,13 @@ Windows APIとPythonの統合技術習得
 画像処理・OCR技術の実装経験
 ユーザビリティを重視したツール設計
 自動化による業務効率化の定量的実証
+- **🆕 プロセス管理**: バックグラウンドサービス制御技術
+
+## 【ファイル構成】
+
+- `working_ocr_service.py` - メインOCRサービス
+- `hotkey_ocr.py` - ホットキー制御
+- `run_ocr_hidden.vbs` - 非表示起動VBScript
+- `run_ocr_hidden.ps1` - 非表示起動PowerShell
+- `run_ocr_background.pyw` - Python非表示Wrapper
+- `start_ocr_hidden.bat` - 簡易起動バッチ
